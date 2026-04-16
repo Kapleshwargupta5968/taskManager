@@ -1,22 +1,26 @@
 const User = require("../models/user");
 const { generateAccessToken, generateRefreshToken } = require("../utils/generateToken");
+const { generateOtp } = require("../utils/generateOtp");
+const Otp = require("../models/otp");
+const transporter = require("../config/mail");
+const jwt = require("jsonwebtoken");
 
 const signUp = async (req, res) => {
-    try{
-        const {name, email, password, role} = req.body;
+    try {
+        const { name, email, password, role } = req.body;
 
-        if(!name || !email || !password){
+        if (!name || !email || !password) {
             return res.status(401).json({
-                success:false,
-                message:"All fields are required"
+                success: false,
+                message: "All fields are required"
             });
         }
 
-        const existingUser = await User.findOne({email});
-        if(existingUser){
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
             return res.status(409).json({
-                success:false,
-                message:"User already exist"
+                success: false,
+                message: "User already exist"
             });
         }
 
@@ -27,170 +31,144 @@ const signUp = async (req, res) => {
             role
         });
 
-        const payload = {
-            id: user._id,
-            email: user.email,
-            role: user.role
-        };
-
-        const accessToken = generateAccessToken(payload);
-        const refreshToken = generateRefreshToken(payload);
-
-        res.cookie("accessToken", accessToken, {
-            httpOnly:true,
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-
-            secure:true,
-            maxAge:15*60*1000
-        });
-
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly:true,
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-            secure:true,
-            maxAge:7*24*60*60*1000
-        });
-
         return res.status(201).json({
-            suucess:true,
+            success: true,
             user,
-            message:"User registered successfully",
-            accessToken
+            message: "User registered successfully",
         });
-    }catch(error){
+    } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         });
     }
 };
 
 const signIn = async (req, res) => {
-    try{
-        const {email, password} = req.body;
-        if(!email || !password){
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
             return res.status(401).json({
-                success:false,
-                message:"All fields are required"
+                success: false,
+                message: "All fields are required"
             });
         }
-        const user = await User.findOne({email});
-        if(!user){
+        const user = await User.findOne({ email });
+        if (!user) {
             return res.status(404).json({
-                success:false,
-                message:"User not found"
+                success: false,
+                message: "User not found"
             });
         }
 
         const isMatch = await user.comparePassword(password);
 
-        if(!isMatch){
+        if (!isMatch) {
             return res.status(403).json({
-                success:false,
-                message:"Invalid credentials"
+                success: false,
+                message: "Invalid credentials"
             });
         }
 
-         const payload = {
-            id: user._id,
-            email: user.email,
-            role: user.role
-        };
+        const existingOtp = await Otp.findOne({ email });
+        
+        if (existingOtp && existingOtp.expiresAt > Date.now()) {
+            return res.status(429).json({
+                success: false,
+                message: "OTP already sent, Please wait."
+            });
+        }
 
-        const accessToken = generateAccessToken(payload);
-        const refreshToken = generateRefreshToken(payload);
+        const otp = generateOtp();
 
-        res.cookie("accessToken", accessToken, {
-            httpOnly:true,
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-
-            secure:true,
-            maxAge:15*60*1000
+        await Otp.create({
+            email,
+            otp,
+            expiresAt: Date.now() + 5 * 60 * 1000
         });
 
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly:true,
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-            secure:true,
-            maxAge:7*24*60*60*1000
+        await transporter.sendMail({
+            from: process.env.MAIL_USER,
+            to: email,
+            subject: "OTP verification",
+            text: `Your OTP is ${otp}`
         });
 
         return res.status(200).json({
-            success:true,
-            message:"User login successfully",
-            accessToken
+            success: true,
+            message: "OTP send to email",
         });
-        
-    }catch(error){
+
+    } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         });
     }
 };
 
 const logout = async (req, res) => {
-    try{
+    try {
         const user = req.user;
-        if(user && user._id){
-            await User.findByIdAndUpdate(user._id, { refreshToken : null});
+        if (user && user._id) {
+            await User.findByIdAndUpdate(user._id, { refreshToken: null });
         }
 
         res.clearCookie("accessToken");
         res.clearCookie("refreshToken");
 
         return res.status(200).json({
-            success:true,
-            message:"Logout successfully"
+            success: true,
+            message: "Logout successfully"
         });
-    }catch(error){
+    } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         });
     }
 };
 
 const authMe = async (req, res) => {
-    try{
-        if(!req.user && !req.user._id){
+    try {
+        if (!req.user || !req.user._id) {
             return res.status(403).json({
-                success:false,
-                message:"Unauthorized"
+                success: false,
+                message: "Unauthorized"
             });
         }
         const user = await User.findById(req.user._id);
-        if(!user){
+        if (!user) {
             return res.status(404).json({
-                success:false,
-                message:"User not found"
+                success: false,
+                message: "User not found"
             });
         }
 
         return res.status(200).json({
-            success:true,
-            user:{
+            success: true,
+            user: {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role:user.role
+                role: user.role
             },
-            message:"User found"
+            message: "User found"
         });
-    }catch(error){
+    } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         });
     }
 };
 
 const refreshAccessToken = async (req, res) => {
-    try{
+    try {
         const refreshToken = req.cookies.refreshToken;
-        if(!refreshTOken){
+        if (!refreshToken) {
             return res.status(403).json({
-                success:false,
+                success: false,
                 message: "refresh token missing"
             });
         }
@@ -198,39 +176,107 @@ const refreshAccessToken = async (req, res) => {
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN);
 
         const user = await User.findById(decoded.id);
-        if(!user || user.refreshTOken !== refreshToken){
+        if (!user || user.refreshToken !== refreshToken) {
             return res.status(403).json({
-                success:false,
-                message:"Invalid refresh token"
+                success: false,
+                message: "Invalid refresh token"
             });
         }
         const payload = {
             id: user.id,
-            name:user.name,
-            email:user.email,
-            role:user.role
+            name: user.name,
+            email: user.email,
+            role: user.role
         };
 
         const newAccessToken = generateAccessToken(payload);
 
         res.cookie("accessToken", newAccessToken, {
-            httpOnly:true,
-            sameSite:prcess.env.NODE_ENV === "production" ? "none" : "lax",
-            secure:true,
-            maxAge:15*60*1000
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: true,
+            maxAge: 15 * 60 * 1000
         });
 
         return res.status(200).json({
-            success:true,
-            message:"Token refreshed",
+            success: true,
+            message: "Token refreshed",
             accessToken: newAccessToken
         })
-    }catch(error){
+    } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         });
     }
 };
 
-module.exports = {signUp, signIn, logout, authMe, refreshAccessToken};
+
+const verifyOtp = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        const record = await Otp.findOne({ email, otp });
+
+        if (!record) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid OTP"
+            });
+        }
+
+        if (record.expiresAt < Date.now()) {
+            return res.status(400).json({
+                success: false,
+                message: "OTP expired"
+            });
+        }
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        const payload = {
+            id: user._id,
+            email: user.email,
+            role: user.role
+        };
+
+        const accessToken = generateAccessToken(payload);
+        const refreshToken = generateRefreshToken(payload);
+
+        await Otp.deleteMany({ email });
+
+        res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+
+            secure: true,
+            maxAge: 15 * 60 * 1000
+        });
+
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: true,
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Login successful"
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+}
+
+module.exports = { signUp, signIn, logout, authMe, refreshAccessToken, verifyOtp };
