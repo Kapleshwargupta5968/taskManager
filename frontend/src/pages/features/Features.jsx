@@ -65,18 +65,18 @@ const Features = () => {
     <div className="bg-[#020202] min-h-screen text-white pt-32 pb-20 overflow-hidden">
       {/* Hero Section */}
       <section className="px-6 mb-32 text-center max-w-5xl mx-auto relative">
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-purple-600/10 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-150 h-75 bg-purple-600/10 blur-[120px] rounded-full pointer-events-none" />
         
         <Tag color="cyan" className="mb-8 px-4 py-1 rounded-full font-bold uppercase tracking-widest text-xs border-none bg-cyan-500/20 text-cyan-400">
            POWERFUL CAPABILITIES
         </Tag>
-        <Title className="!text-white !text-6xl md:!text-8xl !font-black !mb-8 tracking-tighter leading-none">
+        <Title className="text-white! text-6xl! md:text-8xl! font-black! mb-8! tracking-tighter leading-none">
           Tools for the <br/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600">
+          <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 via-blue-500 to-purple-600">
             modern builder.
           </span>
         </Title>
-        <Paragraph className="!text-gray-400 !text-xl md:!text-2xl leading-relaxed max-w-3xl mx-auto">
+        <Paragraph className="text-gray-400! text-xl! md:text-2xl! leading-relaxed max-w-3xl mx-auto">
           Everything you need to manage complex projects without the complex overhead. 
           Built for speed, designed for clarity.
         </Paragraph>
@@ -88,13 +88,13 @@ const Features = () => {
           {featureList.map((f, i) => (
             <Col xs={24} md={12} lg={8} key={i}>
               <div className="relative group h-full">
-                <div className={`absolute inset-0 bg-gradient-to-br ${f.gradient} opacity-0 group-hover:opacity-5 rounded-[40px] transition-opacity duration-500`} />
+                <div className={`absolute inset-0 bg-linear-to-br ${f.gradient} opacity-0 group-hover:opacity-5 rounded-[40px] transition-opacity duration-500`} />
                 <div className="relative h-full bg-white/5 border border-white/5 p-10 rounded-[40px] hover:border-white/10 transition-all duration-500 flex flex-col">
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-8 bg-gradient-to-br ${f.gradient} text-white shadow-lg`} style={{ boxShadow: `0 15px 30px ${f.shadow}` }}>
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-8 bg-linear-to-br ${f.gradient} text-white shadow-lg`} style={{ boxShadow: `0 15px 30px ${f.shadow}` }}>
                     {f.icon}
                   </div>
-                  <Title level={3} className="!text-white mb-6 !font-bold">{f.title}</Title>
-                  <Paragraph className="!text-gray-500 text-lg leading-relaxed flex-grow">
+                  <Title level={3} className="text-white! mb-6 font-bold!">{f.title}</Title>
+                  <Paragraph className="text-gray-500! text-lg leading-relaxed grow">
                     {f.desc}
                   </Paragraph>
                   <div className="mt-8 pt-8 border-t border-white/5">
@@ -113,8 +113,8 @@ const Features = () => {
       <section className="px-6 text-center py-32 bg-white/5 border-y border-white/5 relative">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5" />
         <div className="relative z-10 max-w-4xl mx-auto">
-          <Title level={2} className="!text-white !text-5xl md:!text-6xl !font-black mb-10">Experience the difference.</Title>
-          <Paragraph className="!text-gray-400 !text-xl mb-12">
+          <Title level={2} className="text-white! text-5xl! md:text-6xl! font-black! mb-10">Experience the difference.</Title>
+          <Paragraph className="text-gray-400! text-xl! mb-12">
             Sign up today and get 14 days of Pro features for free. No credit card required.
           </Paragraph>
           <Button 
