@@ -3,7 +3,8 @@ import { FormProvider, useForm } from "react-hook-form";
 const FormWrapper = ({
     children,
     onSubmit,
-    defaultValues = {}
+    defaultValues = {},
+    className = ""
 }) => {
 
     const methods = useForm({ defaultValues });
@@ -12,7 +13,7 @@ const FormWrapper = ({
         <FormProvider {...methods}>
             <form
                 onSubmit={methods.handleSubmit(onSubmit)}
-                className="max-w-md mx-auto p-6 shadow-md rounded-lg bg-white"
+                className={`w-full max-w-md space-y-4 ${className}`}
             >
                 {children}
             </form>
