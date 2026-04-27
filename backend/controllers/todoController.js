@@ -1,128 +1,129 @@
 const Todo = require("../models/todo");
 
 const createTodo = async (req, res) => {
-    try{
-        const {title, description, duration} = req.body;
-        if(!title || !description || !duration){
+    try {
+        const { title, description, deadline } = req.body;
+        if (!title || !description || !deadline) {
             return res.status(401).json({
-                success:false,
-                message:"All fields are required"
+                success: false,
+                message: "All fields are required"
             });
         }
 
-        const existingTodo = await Todo.findOne({title});
-        if(existingTodo){
+        const existingTodo = await Todo.findOne({ title });
+        if (existingTodo) {
             return res.status(409).json({
-                success:false,
-                message:"Todo already exist"
+                success: false,
+                message: "Todo already exists"
             });
         }
 
         const todo = await Todo.create({
             title,
             description,
-            duration
+            deadline
         });
 
         return res.status(201).json({
-            success:true,
-            message:"Todo create successfully"
+            success: true,
+            message: "Todo created successfully"
         });
-    }catch(error){
+    } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         });
     }
 };
 
 const getAllTodo = async (req, res) => {
-    try{
+    try {
         const allTodo = await Todo.find();
         return res.status(200).json({
-            success:true,
-            message:"Todo fetch successfully"
+            success: true,
+            data: allTodo,
+            message: "Todos fetched successfully"
         });
-    }catch(error){
+    } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         });
     }
 };
 
 const getTodoById = async (req, res) => {
-    try{
+    try {
         const todoId = req.params.id;
 
-        const todo = await Todo.findById({todoId})
-        if(!todo){
+        const todo = await Todo.findById(todoId); // Pass string directly
+        if (!todo) {
             return res.status(404).json({
-                success:false,
-                message:"Todo not found"
+                success: false,
+                message: "Todo not found"
             });
         }
 
         return res.status(200).json({
-            success:true,
+            success: true,
             todo,
-            message:"Todo found"
+            message: "Todo found"
         });
-          
-    }catch(error){
+
+    } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         });
     }
 };
 
 const updateTodo = async (req, res) => {
-    try{
+    try {
         const todoId = req.params.id;
-        const updateTodo = await Todo.findByIdAndUpdate(todoId, req.body, {
-            new:true,
+        const updatedTodo = await Todo.findByIdAndUpdate(todoId, req.body, {
+            new: true,
             runValidators: true
         });
-        
-        if(!updateTodo){
+
+        if (!updatedTodo) {
             return res.status(404).json({
-                success:false,
-                message:"Todo not found"
+                success: false,
+                message: "Todo not found"
             });
         }
 
         return res.status(200).json({
-            success:true,
-            message:"Todo update successfully",
-            data: updateTodo
+            success: true,
+            message: "Todo updated successfully",
+            data: updatedTodo
         });
-    }catch(error){
+    } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         });
     }
 };
 
 const deleteTodo = async (req, res) => {
-    try{
+    try {
         const todoId = req.params.id;
-        const deleteTodo = await Todo.findByIdAndDelete({todoId});
-        if(!deleteTodo){
+        const deletedTodo = await Todo.findByIdAndDelete(todoId); // Pass string directly
+        if (!deletedTodo) {
             return res.status(404).json({
-                success:false,
-                message:"Todo not found"
+                success: false,
+                message: "Todo not found"
             });
         }
         return res.status(200).json({
-            success:true,
-            message:"Todo delete successfully"
+            success: true,
+            message: "Todo deleted successfully"
         });
-    }catch(error){
-           return res.status(500).json({
-            success:false,
-            message:error.message
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
         });
     }
 };

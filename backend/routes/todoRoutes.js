@@ -3,9 +3,9 @@ const { createTodo, getAllTodo, getTodoById, updateTodo, deleteTodo } = require(
 const router = express.Router();
 
 router.post("/create", createTodo);
-router.get("/", getAllTodo);
+router.get("/getTasks", getAllTodo);
 router.get("/:id", getTodoById);
-router.post("/", updateTodo);
-router.post("/:id", deleteTodo);
+router.put("/update/:id", updateTodo);
+router.delete("/delete/:id", deleteTodo);
 
 module.exports = router;

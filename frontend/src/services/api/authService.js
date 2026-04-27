@@ -29,6 +29,15 @@ export const getMe = async () => {
     }
 };
 
+export const verifyOtp = async (data) => {
+    try{
+        const response = await axiosInstance.post("/auth/verify-otp", data);
+        return response?.data;
+    }catch(error){
+        throw error;
+    }
+};
+
 export const logoutUser = async () => {
     try{
         const response = await axiosInstance.post("/auth/logout");

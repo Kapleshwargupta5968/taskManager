@@ -5,7 +5,8 @@ import About from "../pages/about/About";
 import Signup from "../pages/auth/Signup";
 import Signin from "../pages/auth/Signin";
 import ProtectedRoutes from "./ProtectedRoutes";
-import UserDashboard from "../pages/dashboard/UserDashboard";
+import Dashboard from "../pages/dashboard/Dashboard";
+import Features from "../pages/features/Features";
 
 export const router = new createBrowserRouter([
     {
@@ -21,6 +22,10 @@ export const router = new createBrowserRouter([
             element:<About/>
         },
         {
+            path:"/features",
+            element:<Features/>
+        },
+        {
             path:"/signup",
             element: <Signup/>
         },
@@ -31,9 +36,9 @@ export const router = new createBrowserRouter([
         {
             path:"/dashboard",
             element:<ProtectedRoutes>
-                <UserDashboard/>
+                <Dashboard/>
             </ProtectedRoutes>
         }
     ]
     }
-])
+]);

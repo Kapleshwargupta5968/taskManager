@@ -5,6 +5,7 @@ import Button from '../../components/reusableComponents/Button'
 import {useDispatch, useSelector} from "react-redux"
 import { registerUser } from '../../services/api/authService'
 import { authFailure, authStart, authSuccess } from '../../features/auth/authSlice'
+import {toast} from "react-toastify";
 
 const Signup = () => {
 
@@ -16,9 +17,11 @@ const Signup = () => {
       dispatch(authStart());
       console.log(data);
       const response = await registerUser(data);
+      toast.success(response?.message);
       dispatch(authSuccess(response?.user));
     }catch(error){
       dispatch(authFailure(error?.response?.data?.message));
+      toast.error(error?.response?.data?.message);
     }
   };
 
@@ -60,6 +63,13 @@ const Signup = () => {
           }
         }}
       />
+      <div className='flex justify-center items-center gap-2'>
+          <label htmlFor="role">Role</label>
+        <select name="role" id="role">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
 
       <Button type="submit" loading={loading}>
         {loading ? "Signing up..." : "SignUp"}

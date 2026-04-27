@@ -1,15 +1,15 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-    user: null,
-    loading:false,
-    error:null
+    user: JSON.parse(localStorage.getItem("user")) || null,
+    loading: false,
+    error: null
 };
 
 const authSlice = createSlice({
     name: "auth",
     initialState,
-    reducers:{
+    reducers: {
         authStart: (state) => {
             state.loading = true;
             state.error = null;
@@ -17,17 +17,19 @@ const authSlice = createSlice({
         authSuccess: (state, action) => {
             state.loading = false;
             const userData = action.payload;
-            state.user = {
-                ...userData,
-                _id: user.id || user._id
+            state.user = userData ?? null;
+            if (userData) {
+                localStorage.setItem("user", JSON.stringify(userData));
             }
         },
         authFailure: (state, action) => {
-            state.loading = false,
-            state.error = action.payload
+            state.loading = false;
+            state.error = action.payload;
         },
         logout: (state) => {
-            state.user = null
+            state.user = null;
+            localStorage.removeItem("user");
+            localStorage.removeItem("hasSession");
         }
     }
 });

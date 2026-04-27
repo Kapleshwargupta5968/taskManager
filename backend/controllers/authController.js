@@ -72,11 +72,15 @@ const signIn = async (req, res) => {
 
         const existingOtp = await Otp.findOne({ email });
         
-        if (existingOtp && existingOtp.expiresAt > Date.now()) {
-            return res.status(429).json({
-                success: false,
-                message: "OTP already sent, Please wait."
-            });
+        if (existingOtp) {
+            if (existingOtp.expiresAt > Date.now()) {
+                return res.status(429).json({
+                    success: false,
+                    message: "OTP already sent, Please wait."
+                });
+            }
+            // ✅ Delete expired OTP before creating new one
+            await Otp.deleteMany({ email });
         }
 
         const otp = generateOtp();
@@ -194,7 +198,7 @@ const refreshAccessToken = async (req, res) => {
         res.cookie("accessToken", newAccessToken, {
             httpOnly: true,
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-            secure: true,
+            secure: process.env.NODE_ENV === "production",  // ✅ false in dev (HTTP)
             maxAge: 15 * 60 * 1000
         });
 
@@ -250,26 +254,34 @@ const verifyOtp = async (req, res) => {
         const accessToken = generateAccessToken(payload);
         const refreshToken = generateRefreshToken(payload);
 
+        // ✅ Save refreshToken to DB so refreshAccessToken can validate it
+        await User.findByIdAndUpdate(user._id, { refreshToken });
+
         await Otp.deleteMany({ email });
 
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-
-            secure: true,
+            secure: process.env.NODE_ENV === "production",  // ✅ false in dev (HTTP)
             maxAge: 15 * 60 * 1000
         });
 
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-            secure: true,
+            secure: process.env.NODE_ENV === "production",  // ✅ false in dev (HTTP)
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
         return res.status(200).json({
             success: true,
-            message: "Login successful"
+            message: "Login successful",
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
         });
     } catch (error) {
         return res.status(500).json({
