@@ -11,8 +11,23 @@ const userSchema = new mongoose.Schema({
     },
     password:{
         type:String,
-        required:true,
+        required: function() {
+            return !this.googleId;
+        },
         minlength:8
+    },
+    googleId: {
+        type: String
+    },
+    picture: {
+        type: String
+    },
+    refreshToken: {
+        type: String
+    },
+    isVerified: {
+        type: Boolean,
+        default: false
     },
     role:{
         type:String,

@@ -46,4 +46,14 @@ export const logoutUser = async () => {
         localStorage.removeItem("hasSession")
         throw error;
     }
+};
+
+export const googleAuth = async (idToken) => {
+    try{
+        const response = await axiosInstance.post("/auth/google-auth", { idToken });
+        localStorage.setItem("hasSession", true);
+        return response?.data;
+    }catch(error){
+        throw error;
+    }
 }

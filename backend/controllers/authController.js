@@ -5,6 +5,9 @@ const Otp = require("../models/otp");
 const transporter = require("../config/mail");
 const jwt = require("jsonwebtoken");
 
+const {OAuth2Client} = require("google-auth-library");
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 const signUp = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
@@ -183,9 +186,10 @@ const refreshAccessToken = async (req, res) => {
         if (!user || user.refreshToken !== refreshToken) {
             return res.status(403).json({
                 success: false,
-                message: "Invalid refresh token"
+                message: "Invalid or used refresh token"
             });
         }
+        
         const payload = {
             id: user.id,
             name: user.name,
@@ -193,20 +197,35 @@ const refreshAccessToken = async (req, res) => {
             role: user.role
         };
 
+        // ✅ Generate NEW tokens (Rotation)
         const newAccessToken = generateAccessToken(payload);
+        const newRefreshToken = generateRefreshToken(payload);
 
-        res.cookie("accessToken", newAccessToken, {
+        // ✅ Save NEW refresh token to DB
+        user.refreshToken = newRefreshToken;
+        await user.save();
+
+        const cookieOptions = {
             httpOnly: true,
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-            secure: process.env.NODE_ENV === "production",  // ✅ false in dev (HTTP)
+            secure: process.env.NODE_ENV === "production",
+        };
+
+        res.cookie("accessToken", newAccessToken, {
+            ...cookieOptions,
             maxAge: 15 * 60 * 1000
+        });
+
+        res.cookie("refreshToken", newRefreshToken, {
+            ...cookieOptions,
+            maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
         return res.status(200).json({
             success: true,
-            message: "Token refreshed",
+            message: "Token refreshed and rotated",
             accessToken: newAccessToken
-        })
+        });
     } catch (error) {
         return res.status(500).json({
             success: false,
@@ -289,6 +308,102 @@ const verifyOtp = async (req, res) => {
             message: error.message
         });
     }
-}
+};
 
-module.exports = { signUp, signIn, logout, authMe, refreshAccessToken, verifyOtp };
+const googleAuth = async (req, res) => {
+    try {
+        const { idToken } = req.body;
+        if (!idToken) {
+            return res.status(400).json({
+                success: false,
+                message: "Id token is required"
+            });
+        }
+
+        const ticket = await googleClient.verifyIdToken({
+            idToken: idToken,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+
+        if (!ticket) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid Id token"
+            });
+        }
+
+        const payload = ticket.getPayload();
+        const { email, name, picture, sub } = payload;
+
+        if (!email || !name) {
+            return res.status(400).json({
+                success: false,
+                message: "email and name are required"
+            });
+        }
+
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            user = await User.create({
+                name,
+                email,
+                googleId: sub,
+                picture,
+                role: "User", // Match schema enum "User"
+                isVerified: true
+            });
+        } else {
+            user.googleId = sub;
+            user.picture = picture || user.picture;
+            // No need to save yet, we save with refreshToken below
+        }
+
+        const tokenPayload = {
+            id: user._id,
+            email: user.email,
+            role: user.role
+        };
+
+        const accessToken = generateAccessToken(tokenPayload);
+        const refreshToken = generateRefreshToken(tokenPayload);
+
+        // ✅ Store refreshToken in DB for verification
+        user.refreshToken = refreshToken;
+        await user.save();
+
+        const cookieOptions = {
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: process.env.NODE_ENV === "production",
+        };
+
+        res.cookie("accessToken", accessToken, {
+            ...cookieOptions,
+            maxAge: 15 * 60 * 1000
+        });
+
+        res.cookie("refreshToken", refreshToken, {
+            ...cookieOptions,
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Login successful",
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+module.exports = { signUp, signIn, logout, authMe, refreshAccessToken, verifyOtp, googleAuth };

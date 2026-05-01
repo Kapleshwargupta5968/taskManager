@@ -4,9 +4,11 @@ import Input from '../../components/reusableComponents/Input'
 import Button from '../../components/reusableComponents/Button'
 import { useDispatch, useSelector } from 'react-redux'
 import { authFailure, authStart, authSuccess } from '../../features/auth/authSlice'
-import { loginUser, verifyOtp } from '../../services/api/authService'
+import { googleAuth, loginUser, verifyOtp } from '../../services/api/authService'
 import { useNavigate, Link } from 'react-router-dom'
 import { toast } from "react-toastify";
+
+import { GoogleLogin } from '@react-oauth/google'
 
 const Signin = () => {
   const dispatch = useDispatch();
@@ -70,6 +72,23 @@ const Signin = () => {
     }
   };
 
+  const handleGoogleSuccess = async (googleResponse) => {
+    try {
+      const { credential } = googleResponse;
+      dispatch(authStart());
+      const data = await googleAuth(credential);
+      toast.success(data?.message || "Login successful!");
+      dispatch(authSuccess(data?.user));
+      navigate("/dashboard");
+    } catch (error) {
+      dispatch(authFailure(error?.response?.data?.message));
+      toast.error(error?.response?.data?.message || "Login failed");
+    }
+  };
+
+  const handleGoogleFailure = (error) => {
+    toast.error("Google login failed");
+  }
   return (
     <div className="min-h-screen w-full flex bg-[#0f172a] text-slate-200 overflow-hidden pt-20 lg:pt-0">
       {/* Left Side: Visual/Branding */}
@@ -154,6 +173,20 @@ const Signin = () => {
                 </Button>
               </FormWrapper>
 
+              <div className="flex items-center gap-4 my-6">
+                <div className="flex-1 h-px bg-slate-700" />
+                <span className="text-sm text-slate-500 font-medium uppercase tracking-wider">OR</span>
+                <div className="flex-1 h-px bg-slate-700" />
+              </div>
+
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleFailure}
+                  width={380}
+                />
+              </div>
+
               <p className="text-center text-slate-400">
                 Don't have an account?{' '}
                 <Link to="/signup" className="text-indigo-400 font-semibold hover:text-indigo-300">
@@ -210,6 +243,7 @@ const Signin = () => {
                   ← Use a different email
                 </button>
               </div>
+
             </div>
           )}
         </div>
